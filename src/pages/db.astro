@@ -1,0 +1,91 @@
+---
+import Layout from "../components/Layout.astro";
+import '../styles/global.css'
+---
+
+<Layout>
+  <h1 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">DB 얼굴 목록</h1>
+  <div class="w-full max-w-3xl mx-auto mb-6">
+    <form id="deleteForm" class="flex gap-2 items-center mb-4">
+      <input id="deleteIdInput" type="text" placeholder="삭제할 ID 입력" class="px-3 py-2 rounded bg-white dark:bg-gray-800 dark:text-gray-100 border border-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-80" />
+      <button type="submit" class="px-4 py-2 rounded bg-red-600 dark:bg-red-800 text-gray-100 font-semibold hover:bg-red-700 transition cursor-pointer">삭제</button>
+    </form>
+    <div id="deleteMsg" class="mb-4 text-sm"></div>
+    <table class="w-full text-left border-collapse text-gray-900">
+      <thead>
+        <tr class="border-b border-gray-300 ">
+          <th class="py-2 px-4 dark:text-white">ID</th>
+          <th class="py-2 px-4 dark:text-white">상세</th>
+        </tr>
+      </thead>
+      <tbody id="faceTableBody"></tbody>
+    </table>
+  </div>
+  <script type="text/javascript">
+    async function fetchFaceList() {
+      const res = await fetch("http://backend-svc/db/list");
+      const data = await res.json();
+      const tbody = document.getElementById("faceTableBody");
+      if (!data.faces || data.faces.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="2" class="text-center text-gray-400 py-4">등록된 얼굴이 없습니다.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = data.faces.map((face, idx) => `
+        <tr class="border-b border-gray-200">
+          <td class="py-2 px-4 font-mono text-xs dark:text-white ">${face.id}</td>
+          <td class="py-2 px-4 ">
+            <button onclick="toggleDetail(${idx})" id="toggleBtn${idx}" class="px-3 py-1 rounded bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 transition cursor-pointer">상세보기</button>
+            <div id="detail${idx}" class="hidden mt-2 text-sm bg-gray-100 rounded p-3 border border-gray-300 text-gray-900 dark:text-gray-300 dark:bg-gray-800">
+              <div><b>이름:</b> ${face.metadata?.name || 'unknown'}</div>
+              <div><b>Document:</b> ${face.document}</div>
+              <div><b>Registered by:</b> ${face.metadata?.registered_by || ''}</div>
+              <div><b>Embedding:</b> <span class="break-all">${face.embedding.slice(0, 10).join(', ')}${face.embedding.length > 10 ? ' ...' : ''}</span></div>
+            </div>
+          </td>
+        </tr>
+      `).join("");
+    }
+    window.toggleDetail = function(idx) {
+      const detail = document.getElementById(`detail${idx}`);
+      const btn = document.getElementById(`toggleBtn${idx}`);
+      if (detail.classList.contains('hidden')) {
+        detail.classList.remove('hidden');
+        btn.textContent = '닫기';
+      } else {
+        detail.classList.add('hidden');
+        btn.textContent = '상세보기';
+      }
+    }
+    fetchFaceList();
+
+    // 삭제 폼 처리
+    document.getElementById('deleteForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('deleteIdInput').value.trim();
+      const msg = document.getElementById('deleteMsg');
+      if (!id) {
+        msg.textContent = 'ID를 입력하세요.';
+        msg.className = 'mb-4 text-sm text-red-600';
+        return;
+      }
+      if (!confirm(`정말로 ID ${id} 데이터를 삭제하시겠습니까?`)) return;
+      msg.textContent = '삭제 중...';
+      msg.className = 'mb-4 text-sm text-gray-600';
+      try {
+        const res = await fetch(`http://172.28.27.151:8888/face/${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (res.ok) {
+          msg.textContent = data.message || '삭제 완료';
+          msg.className = 'mb-4 text-sm text-green-600';
+          fetchFaceList();
+        } else {
+          msg.textContent = data.message || '삭제 실패';
+          msg.className = 'mb-4 text-sm text-red-600';
+        }
+      } catch (e) {
+        msg.textContent = '삭제 요청 실패: ' + e;
+        msg.className = 'mb-4 text-sm text-red-600';
+      }
+    });
+  </script>
+</Layout>
