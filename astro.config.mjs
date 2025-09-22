@@ -7,8 +7,16 @@ export default defineConfig({
   vite: {
     plugins: [tailwindcss()],
     server: {
+      proxy: {
+        '/api': {
+          target: 'https://localhost:8888',
+          changeOrigin: true,
+          secure: false,
+          rewrite: (path) => path.replace(/^\/api/, ''),
+        },
+      },
       https: {
-        cert: 'localhost+1.pem', 
+        cert: 'localhost+1.pem',
         key: 'localhost+1-key.pem',
       },
       host: true,
@@ -16,3 +24,4 @@ export default defineConfig({
     },
   },
 });
+

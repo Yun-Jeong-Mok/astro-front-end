@@ -23,7 +23,7 @@ import '../styles/global.css'
   </div>
   <script type="text/javascript">
     async function fetchFaceList() {
-      const res = await fetch("http://backend-svc/db/list");
+      const res = await fetch("/api/db/list");
       const data = await res.json();
       const tbody = document.getElementById("faceTableBody");
       if (!data.faces || data.faces.length === 0) {
@@ -72,7 +72,7 @@ import '../styles/global.css'
       msg.textContent = '삭제 중...';
       msg.className = 'mb-4 text-sm text-gray-600';
       try {
-        const res = await fetch(`http://172.28.27.151:8888/face/${id}`, { method: 'DELETE' });
+        const res = await fetch(`/api/face/${id}`, { method: 'DELETE' });
         const data = await res.json();
         if (res.ok) {
           msg.textContent = data.message || '삭제 완료';
